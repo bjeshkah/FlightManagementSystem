@@ -30,8 +30,10 @@ def main():
         print("5.View Pilot Schedule")
         print("6.View Destination Information")
         print("7.Update Destination Information")
+        print("8.Other Summary Reports")
+        print("9.Exit")
 
-        user_input=input("Please select one (1-7):")
+        user_input=input("Please select one (1-9):")
 
         if user_input == "1":
             add_new_flight(conn)
@@ -48,6 +50,8 @@ def main():
         elif user_input == "7":
             update_destination(conn)
         elif user_input == "8":
+            summary_reports(conn)
+        elif user_input == "9":
             print("Leaving Application")
             conn.close()
             break

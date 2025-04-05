@@ -292,4 +292,84 @@ def update_destination (conn):
         conn.commit()
         print("Country Name updated successfully")
 
+def summary_reports (conn):
+    conn = sqlite3.connect('airline.db')
+    cursor=conn.cursor()
+    print("\nWhat would you like to view?")
+    print("1.Number of flights to each destination")
+    print("2.Number of flights assigned to a pilot")
+    print("3.Number of flights per aircraft")
+    print("4.Availabe Pilots on a given day")
+    print("5.Availabe Planes on a given day")
     
+    user_input = input("Please select one (1-7):")
+    
+    if user_input == "1":
+        query="""
+        SELECT l.airport_code as DESTINATION, COUNT(f.flight_id) as NumberOfFlights
+        FROM Location l JOIN Flight f on f.arrival_location_id = l.location_id
+        GROUP BY l.location_id
+        ORDER BY NumberOfFlights DESC;
+        """
+        cursor.execute(query)
+        output = cursor.fetchall()
+        headers=["Destination","Number of Flights"]
+        print(tabulate(output,headers=headers,tablefmt="grid"))
+
+    elif user_input == "2":
+        query="""
+        SELECT p.licence_number,p.first_name || ' ' || p.last_name as Pilot_Name, COUNT(pa.flight_id) as NumberOfAssignments
+        FROM Pilot p JOIN PilotAssignment pa on p.pilot_id=pa.pilot_id
+        GROUP BY p.pilot_id
+        ORDER BY NumberOfAssignments DESC;
+        """
+        cursor.execute(query)
+        output = cursor.fetchall()
+        headers=["Pilot Licence Number","Pilot Name","Number of Flights"]
+        print(tabulate(output,headers=headers,tablefmt="grid"))
+
+    elif user_input == "3":
+        query="""
+        SELECT a.licence_plate,a.model, COUNT(f.flight_id) as NumberOfFlights
+        FROM Aircraft a JOIN Flight f on a.aircraft_id=f.aircraft_id
+        GROUP BY a.aircraft_id
+        ORDER BY NumberOfFlights DESC;
+        """
+        cursor.execute(query)
+        output = cursor.fetchall()
+        headers=["Aircraft Licence Plate","Aircraft Model","Number of Flights"]
+        print(tabulate(output,headers=headers,tablefmt="grid"))
+
+    elif user_input == "4":
+        user_input=input("Please input a date YYYYMMDD:")
+        query_date= datetime.strptime(user_input,"%Y%m%d").strftime("%Y-%m-%d")
+        cursor.execute("""
+        WITH available AS (
+        SELECT pa.pilot_id from PilotAssignment pa JOIN Flight f on pa.flight_id=f.flight_id
+        WHERE DATE(f.departure_time) = ?
+                       )
+        SELECT pilot_id,first_name,last_name from Pilot WHERE pilot_id NOT IN (SELECT pilot_id FROM available);
+                       """,(query_date,))
+        output = cursor.fetchall()
+        headers=["Pilot ID","Pilot First Name","Pilot Last Name"]
+        print(tabulate(output,headers=headers,tablefmt="grid"))
+
+    elif user_input == "5":
+        user_input=input("Please input a date YYYYMMDD:")
+        query_date= datetime.strptime(user_input,"%Y%m%d").strftime("%Y-%m-%d")
+        cursor.execute("""
+        WITH available AS (
+        SELECT aircraft_id from Flight
+        WHERE DATE(departure_time) = ?
+                       )
+        SELECT a.licence_plate,a.model from Aircraft a WHERE a.aircraft_id NOT IN (SELECT aircraft_id FROM available);
+                       """,(query_date,))
+        output = cursor.fetchall()
+        headers=["Aircraft Licence Plate","Aircraft Model"]
+        print(tabulate(output,headers=headers,tablefmt="grid"))
+
+    else:
+        print("Invalid option. Please try again.")
+        return
+
+
